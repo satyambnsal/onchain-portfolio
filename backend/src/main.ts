@@ -1,4 +1,5 @@
 import Fastify, { FastifyInstance } from 'fastify'
+import cors from '@fastify/cors'
 import { Alchemy, Network } from 'alchemy-sdk'
 import z from 'zod'
 import { serializerCompiler, validatorCompiler, ZodTypeProvider } from 'fastify-type-provider-zod'
@@ -14,6 +15,7 @@ const alchemy = new Alchemy(config)
 const server: FastifyInstance = Fastify({ logger: true })
 server.setValidatorCompiler(validatorCompiler)
 server.setSerializerCompiler(serializerCompiler)
+server.register(cors)
 
 /* For simplicity, I'm going for in-memory cache. In production we can use redis but I decided to 
 not implement it here as it adds additional overhead for person trying the app locally 
