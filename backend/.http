@@ -1,0 +1,2 @@
+GET http://localhost:3001/api/balance?address=0x2FC4B4eF2f78Ea51D05a0AE13D21B3F9E96C0239
+
