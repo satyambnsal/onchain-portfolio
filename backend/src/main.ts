@@ -106,15 +106,11 @@ const start = async () => {
 start()
 
 function formatHexBalance(hexValue, decimals = 18) {
-  // Convert hex to BigInt
   const value = BigInt(hexValue)
 
-  // Convert to decimal value (divide by 10^decimals)
   const divisor = BigInt(10 ** decimals)
   const integerPart = value / divisor
   const fractionalPart = value % divisor
-
-  // Convert to string with appropriate decimal places
   let result = integerPart.toString()
 
   // Add comma separators to integer part
@@ -122,18 +118,12 @@ function formatHexBalance(hexValue, decimals = 18) {
 
   // Handle the fractional part
   if (fractionalPart > 0) {
-    // Convert to string and pad with leading zeros if needed
     let fractionStr = fractionalPart.toString().padStart(decimals, '0')
-
-    // Trim trailing zeros
     fractionStr = fractionStr.replace(/0+$/g, '')
 
     // Limit to 4 significant digits for fractional part
     if (fractionStr.length > 4) {
-      // Find first non-zero digit
       const firstNonZero = fractionStr.search(/[1-9]/)
-
-      // Keep at most 4 significant digits after first non-zero
       const keepDigits = Math.min(firstNonZero + 4, fractionStr.length)
       fractionStr = fractionStr.substring(0, keepDigits)
     }
