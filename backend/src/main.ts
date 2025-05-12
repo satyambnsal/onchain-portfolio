@@ -1,5 +1,4 @@
-import Fastify, { FastifyInstance, RouteShorthandOptions } from 'fastify'
-import { Server, IncomingMessage, ServerResponse, request } from 'http'
+import Fastify, { FastifyInstance } from 'fastify'
 import { Alchemy, Network } from 'alchemy-sdk'
 import z from 'zod'
 import { serializerCompiler, validatorCompiler, ZodTypeProvider } from 'fastify-type-provider-zod'
@@ -11,11 +10,15 @@ const config = {
   network: Network.ETH_MAINNET,
 }
 
-let usdcContract = '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48'
-
 const alchemy = new Alchemy(config)
-
 const server: FastifyInstance = Fastify({ logger: true })
+server.setValidatorCompiler(validatorCompiler)
+server.setSerializerCompiler(serializerCompiler)
+
+/* For simplicity, I'm going for in-memory cache. In production we can use redis but I decided to 
+not implement it here as it adds additional overhead for person trying the app locally 
+*/
+const cache = new Map()
 
 const schema = {
   $id: 'get-balance',
@@ -38,9 +41,6 @@ const schema = {
   },
 }
 
-server.setValidatorCompiler(validatorCompiler)
-server.setSerializerCompiler(serializerCompiler)
-
 server.route({
   method: 'GET',
   url: '/api/status',
@@ -56,6 +56,14 @@ server.withTypeProvider<ZodTypeProvider>().route({
   handler: async (req, res) => {
     console.log(req.query.address)
     const address = req.query.address
+    if (cache.has(address)) {
+      const cachedEntry = cache.get(address)
+      const ageInSeconds = (Date.now() - cachedEntry.timestamp) / 1000
+      if (ageInSeconds < 60) {
+        console.log('returning from cache')
+        return cachedEntry.data
+      }
+    }
     const [linkUsdcBalanceRaw, ethBalanceRaw] = await Promise.all([
       alchemy.core.getTokenBalances(address, [
         TOKENS.USDC.contractAddress,
@@ -77,7 +85,8 @@ server.withTypeProvider<ZodTypeProvider>().route({
       tokens: [{ symbol: 'ETH', balance: ethBalance }, ...linkUsdcBalances],
       success: true,
     }
-    console.log('response', response)
+
+    cache.set(address, { data: response, timestamp: Date.now() })
     return response
   },
 })
